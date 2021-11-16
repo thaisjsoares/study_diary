@@ -1,4 +1,3 @@
-require 'io/console'
 require_relative 'study_item'
 
 def display
