@@ -1,3 +1,0 @@
-["Hashes", "Hashes are cool.", "Ruby", "(X)"]
-["Arrow Functions", "JS is cool.", "Javascript", "(X)"]
-["Loops", "Loops are cool.", "Ruby", "(X)"]

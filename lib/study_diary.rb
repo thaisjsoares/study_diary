@@ -2,19 +2,6 @@ require 'colorized_string'
 require_relative 'study_options'
 require_relative 'study_item'
 
-$all_items = {}
-
-if !(File.zero?("diary.txt"))
-  f = File.open("diary.txt")
-  f.each_line { |line| 
-    line.delete! "/[]/"
-    line.delete! "/\"/"
-    back_to_array = line.split(", ")
-    $all_items[f.lineno - 1] = [back_to_array[0], back_to_array[1], back_to_array[2], back_to_array[3].chomp]
-  }
-  f.close
-end
-
 puts `clear`
 
 print "\033[6C"
@@ -43,7 +30,6 @@ while option != 6
   end
 end
 
-save
 puts ""
 print "\033[6C"
 puts ColorizedString["Obrigada por utilizar o Diário de Estudos"].black.on_cyan

@@ -1,4 +1,5 @@
 require 'io/console'
+require_relative 'study_item'
 
 def display
   puts ColorizedString["
@@ -8,7 +9,7 @@ def display
     │ [3] Listar por categoria             │
     │ [4] Listar por tópicos concluídos    │
     │ [5] Buscar                           │
-    │ [6] Salvar e sair                    │
+    │ [6] Sair                             │
     └──────────────────────────────────────┘
                         
       Escolha uma opção:                  "].colorize(:cyan)
@@ -22,9 +23,12 @@ def show
       Itens cadastrados:"].colorize(:light_red)
   puts ""
 
-  $all_items.length.times { |i| 
+  topics = StudyItem.all
+  
+  topics.each_with_index { |topic, i| 
     print "\033[6C"
-    puts ColorizedString["[#{i + 1}] #{$all_items[i][0]} (#{$all_items[i][2]}) #{$all_items[i][3]}"].colorize(:light_red)
+    checked = topic.done == 0 ? "( )" : "(X)"
+    puts ColorizedString["[#{i + 1}] #{topic.title} (#{topic.category}) #{checked}"].colorize(:light_red)
   }
 end
 
@@ -44,7 +48,7 @@ def register
   current_item = StudyItem.new(title: title, description: description)
   current_item.choose_category
 
-  $all_items[$all_items.length] = [current_item.title, current_item.description, current_item.category, current_item.done]
+  current_item.save_to_db
 
   print "\033[07C"
   puts ColorizedString["
@@ -60,11 +64,10 @@ def erase
   print "\033[1A\033[40C"
   option = gets.chomp.to_i
 
-  $all_items.delete(option - 1)
-  new_all_times = {}
+  topics = StudyItem.all
 
-  $all_items.each_with_index { |pair, i| new_all_times[i] = pair[1] }
-  $all_items = new_all_times.clone
+  title = topics[option - 1].title
+  StudyItem.delete_item(title)
 
   puts ColorizedString["
       Item deletado."].colorize(:magenta)
@@ -90,26 +93,31 @@ def change
   print "\033[1A\033[25C"
   what_to_edit = gets.chomp.to_i
 
+  topics = StudyItem.all
+  title = topics[item_to_edit - 1].title
+
   case what_to_edit
   when 1
     puts ColorizedString["
       Novo título:"].colorize(:magenta)
     print "\033[1A\033[19C"
-    new = gets.chomp
-    $all_items[item_to_edit - 1][0] = new
+    new_item = gets.chomp
+    column = "title"
   when 2
     puts ColorizedString["
       Nova descrição:"].colorize(:magenta)
     print "\033[1A\033[22C"
-    new = gets.chomp
-    $all_items[item_to_edit - 1][1] = new
+    new_item = gets.chomp
+    column = "description"
   when 3
     puts ColorizedString["
       Nova categoria:"].colorize(:magenta)
     print "\033[1A\033[21C"
-    new = gets.chomp
-    $all_items[item_to_edit - 1][2] = new
+    new_item = gets.chomp
+    column = "category"
   end
+
+  topics[item_to_edit - 1].update_item(column, new_item, title)
 
   puts ColorizedString["
       Item editado."].colorize(:magenta)
@@ -121,9 +129,17 @@ def mark_as_done
   puts ColorizedString["
       Escolha a entrada para marcar como concluída:"].colorize(:magenta)
 
-  print "\033[1A\033[37C"
+  print "\033[1A\033[52C"
   option = gets.chomp.to_i
-  $all_items[option - 1][3] = "(X)"
+
+  topics = StudyItem.all
+  column = "done"
+  new_item = "1"
+  title = topics[option - 1].title
+  topics[option - 1].update_item(column, new_item, title)
+
+  puts ColorizedString["
+      Item marcado como concluído."].colorize(:magenta) 
 end
 
 def edit
@@ -160,36 +176,22 @@ def list_by_category
       Escolha uma categoria:"].colorize(:light_magenta)
 
   print "\033[1A\033[29C"
-  category = gets.chomp.to_i
+  category = gets.chomp.to_i == 1 ? "Ruby" : "Javascript"
   puts ""
 
-  results = []
-
-  $all_items.length.times { |i|
-    case category
-    when 1
-      results << $all_items[i] if $all_items[i][1] == "Ruby"
-    when 2
-      results << $all_items[i] if $all_items[i][1] == "Javascript"
-    end
-  }
-
-  results.length.times { |i| 
+  topics = StudyItem.find_by_category(category)
+  topics.each_with_index { |topic, i| 
     print "\033[6C"
-    puts ColorizedString["#{results[i][0]} (#{results[i][1]})"].colorize(:light_magenta)
+    checked = topic.done == 0 ? "( )" : "(X)"
+    puts ColorizedString["[#{i + 1}] #{topic.title} (#{topic.category}) #{checked}"].colorize(:light_red)
   }
 end
 
 def list_by_done
-  results = []
-
-  $all_items.length.times { |i|
-    results << $all_items[i] if $all_items[i][3] == "(X)"
-  }
-
-  results.length.times { |i| 
+  topics = StudyItem.find_by_done
+  topics.each_with_index { |topic, i| 
     print "\033[6C"
-    puts ColorizedString["#{results[i][0]} (#{results[i][1]})"].colorize(:light_magenta)
+    puts ColorizedString["[#{i + 1}] #{topic.title} (#{topic.category}) (X)"].colorize(:light_red)
   }
 end
 
@@ -203,18 +205,13 @@ def search
       Resultado da busca:"].colorize(:yellow)
   puts ""
 
-  results = []
+  topics = StudyItem.find(search_for)
 
-  $all_items.length.times { |i|
-    if $all_items[i][0].match(/#{search_for}/i) || $all_items[i][1].match(/#{search_for}/i)
-      results << $all_items[i]
-    end
-  }
-
-  if results.length != 0
-    results.length.times { |i| 
+  if topics.length != 0
+    topics.each_with_index { |topic, i| 
+      checked = topic.done == 0 ? "( )" : "(X)"
       print "\033[6C"
-      puts ColorizedString["#{results[i][0]} (#{results[i][2]})"].colorize(:yellow)
+      puts ColorizedString["[#{i + 1}] #{topic.title} (#{topic.category}) #{checked}"].colorize(:light_red)
     }
   else
     print "\033[6C"
@@ -228,13 +225,4 @@ def write_to_file
   $all_items.length.times { |i| 
     File.write("diary.txt", "#{$all_items[i]}\n", mode: "a")
   } 
-end
-
-def save
-  puts ""
-  print "\033[6C"
-  puts ColorizedString["Você gostaria de salvar o diário? [s/n]"].colorize(:yellow)
-  print "\033[1A\033[46C"
-  yes_or_no = gets.chomp
-  write_to_file if yes_or_no == "s" || yes_or_no == "S"
 end

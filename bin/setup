@@ -1,0 +1,32 @@
+#!/usr/bin/env ruby
+
+puts '== Instalando dependências =='
+system 'gem install bundler --conservative'
+system('bundle check') || system('bundle install')
+
+require 'sqlite3'
+
+puts "\n== Preparando banco de dados =="
+begin
+  db = SQLite3::Database.open "db/database.db"
+  db.execute <<~SQL
+    CREATE TABLE Topics(
+      title varchar(255),
+      description varchar(255),
+      category varchar(255),
+      done boolean
+    );
+  SQL
+
+  seed_data = [["Hashes", "Understand hashes", "Ruby", 0],
+               ["Arrow Functions", "JS is cool", "Javascript", 0]]
+
+  seed_data.each do |data|
+    db.execute "INSERT INTO Topics VALUES ( ?, ?, ?, ? )", data
+  end
+
+rescue SQLite3::Exception => e
+  puts e
+ensure
+  db.close if db
+end
