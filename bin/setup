@@ -4,6 +4,7 @@ puts '== Instalando dependências =='
 system 'gem install bundler --conservative'
 system('bundle check') || system('bundle install')
 
+require 'colorize'
 require 'sqlite3'
 
 puts "\n== Preparando banco de dados =="
