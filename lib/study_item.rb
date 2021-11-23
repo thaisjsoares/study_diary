@@ -19,7 +19,7 @@ class StudyItem
       Escolha uma categoria para seu item de estudo:"].colorize(:magenta)
 
     print "\033[1A\033[53C"
-    category = gets.chomp.to_i
+    category = gets.to_i
 
     category == 1 ? @category = "Ruby" : @category = "Javascript"
   end
