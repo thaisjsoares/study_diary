@@ -1,4 +1,5 @@
 require 'sqlite3'
+require 'colorized_string'
 
 class StudyItem
   attr_accessor :title, :category, :description, :done
@@ -37,6 +38,29 @@ class StudyItem
     db.execute "INSERT INTO topics VALUES('#{title}', '#{description}', '#{category}', '#{done}')"
     db.close
     self
+  end
+
+  def self.register
+    puts ColorizedString["
+      Digite o título do seu tópico de estudo:"].colorize(:magenta)
+  
+    print "\033[1A\033[47C"
+    title = gets.chomp
+  
+    puts ColorizedString["
+      Digite uma descrição:"].colorize(:magenta)
+  
+    print "\033[1A\033[28C"
+    description = gets.chomp
+  
+    current_item = StudyItem.new(title: title, description: description)
+    current_item.choose_category
+  
+    current_item.save_to_db
+  
+    print "\033[07C"
+    puts ColorizedString["
+      Item de estudo #{current_item.title} criado na categoria #{current_item.category}."].colorize(:magenta)
   end
 
   def self.delete_item(title)
