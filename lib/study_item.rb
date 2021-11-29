@@ -21,7 +21,6 @@ class StudyItem
 
     print "\033[1A\033[53C"
     category = gets.to_i
-
     category == 1 ? @category = "Ruby" : @category = "Javascript"
   end
 
@@ -63,7 +62,7 @@ class StudyItem
       Item de estudo #{current_item.title} criado na categoria #{current_item.category}."].colorize(:magenta)
   end
 
-  def self.delete_item(title)
+  def self.delete_from_db(title)
     db = SQLite3::Database.open "db/database.db"
     db.execute "DELETE FROM topics WHERE title = '#{title}'"
     db.close
@@ -75,26 +74,10 @@ class StudyItem
     db.close
   end
 
-  def self.find(query)
+  def self.find(query, term)
     db = SQLite3::Database.open "db/database.db"
     db.results_as_hash = true
-    topics = db.execute "SELECT title, description, category, done FROM topics where title LIKE '#{query}%' OR description LIKE '%#{query}%'"
-    db.close
-    topics.map { |topic| new(title: topic["title"], description: topic["description"], category: topic["category"], done: topic["done"]) }
-  end
-
-  def self.find_by_category(category)
-    db = SQLite3::Database.open "db/database.db"
-    db.results_as_hash = true
-    topics = db.execute "SELECT title, description, category, done FROM topics where category='#{category}'"
-    db.close
-    topics.map { |topic| new(title: topic["title"], description: topic["description"], category: topic["category"], done: topic["done"]) }
-  end
-
-  def self.find_by_done
-    db = SQLite3::Database.open "db/database.db"
-    db.results_as_hash = true
-    topics = db.execute "SELECT title, description, category, done FROM topics where done='1'"
+    topics = db.execute "SELECT title, description, category, done FROM topics where #{query} '#{term}'"
     db.close
     topics.map { |topic| new(title: topic["title"], description: topic["description"], category: topic["category"], done: topic["done"]) }
   end

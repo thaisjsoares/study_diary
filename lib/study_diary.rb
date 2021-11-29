@@ -2,11 +2,12 @@ require 'colorized_string'
 require_relative 'study_item'
 
 def clear
+  puts ""
   system("clear")
 end
 
 def welcome_bye(message)
-  print "\033[6C"
+  print "\33[1B\033[6C"
   puts ColorizedString[message].black.on_cyan
 end
 
@@ -27,18 +28,21 @@ def display
   option = gets.to_i
 end
 
+def format_items(topics)
+  topics.each.with_index(1) do |topic, i| 
+    print "\033[6C"
+    checked = topic.done == 0 ? "( )" : "(X)"
+    puts ColorizedString["[#{i}] #{topic.title} (#{topic.category}) #{checked}"].colorize(:light_red)
+  end
+end
+
 def show
   puts ColorizedString["
       Itens cadastrados:"].colorize(:light_red)
   puts ""
 
   topics = StudyItem.all
-  
-  topics.each.with_index(1) do |topic, i| 
-    print "\033[6C"
-    checked = topic.done == 0 ? "( )" : "(X)"
-    puts ColorizedString["[#{i}] #{topic.title} (#{topic.category}) #{checked}"].colorize(:light_red)
-  end
+  format_items(topics)
 end
 
 def erase
@@ -53,7 +57,7 @@ def erase
   topics = StudyItem.all
 
   title = topics[option - 1].title
-  StudyItem.delete_item(title)
+  StudyItem.delete_from_db(title)
 
   puts ColorizedString["
       Item deletado."].colorize(:magenta)
@@ -84,22 +88,19 @@ def change
 
   case what_to_edit
   when 1
-    puts ColorizedString["
-      Novo título:"].colorize(:magenta)
-    print "\033[1A\033[19C"
     column = "title"
+    to_change = "Novo título:"
   when 2
-    puts ColorizedString["
-      Nova descrição:"].colorize(:magenta)
-    print "\033[1A\033[22C"
     column = "description"
+    to_change = "Nova descrição:"
   when 3
-    puts ColorizedString["
-      Nova categoria:"].colorize(:magenta)
-    print "\033[1A\034[21C"
+    to_change = "Nova categoria:"
     column = "category"
   end
-
+  
+  print "\033[1B\033[06C"
+  puts ColorizedString[to_change].colorize(:magenta)
+  print "\033[1A\033[22C"
   new_item = gets.chomp
 
   topics[item_to_edit - 1].update_item(column, new_item, title)
@@ -164,20 +165,14 @@ def list_by_category
   category = gets.to_i == 1 ? "Ruby" : "Javascript"
   puts ""
 
-  topics = StudyItem.find_by_category(category)
-  topics.each.with_index do |topic, i| 
-    print "\033[6C"
-    checked = topic.done == 0 ? "( )" : "(X)"
-    puts ColorizedString["[#{i}] #{topic.title} (#{topic.category}) #{checked}"].colorize(:light_red)
-  end
+  topics = StudyItem.find("category=", category)
+  format_items(topics)
 end
 
 def list_by_done
-  topics = StudyItem.find_by_done
-  topics.each.with_index do |topic, i| 
-    print "\033[6C"
-    puts ColorizedString["[#{i}] #{topic.title} (#{topic.category}) (X)"].colorize(:light_red)
-  end
+  topics = StudyItem.find("done=", "1")
+  puts ""
+  format_items(topics)
 end
 
 def search
@@ -190,14 +185,10 @@ def search
       Resultado da busca:"].colorize(:yellow)
   puts ""
 
-  topics = StudyItem.find(search_for)
-
-  if topics.length != 0
-    topics.each.with_index do |topic, i| 
-      checked = topic.done == 0 ? "( )" : "(X)"
-      print "\033[6C"
-      puts ColorizedString["[#{i}] #{topic.title} (#{topic.category}) #{checked}"].colorize(:light_red)
-    end
+  topics = StudyItem.find("title LIKE", search_for)
+  
+  if !topics.empty?
+    format_items(topics)
   else
     print "\033[6C"
     puts ColorizedString["Sem resultados"].colorize(:yellow)
@@ -229,6 +220,5 @@ while option != 6
   end
 end
 
-puts ""
 welcome_bye("Obrigada por utilizar o Diário de Estudos")
 puts ""
