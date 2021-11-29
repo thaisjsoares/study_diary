@@ -165,12 +165,12 @@ def list_by_category
   category = gets.to_i == 1 ? "Ruby" : "Javascript"
   puts ""
 
-  topics = StudyItem.find("category=", category)
+  topics = StudyItem.find("category", category)
   format_items(topics)
 end
 
 def list_by_done
-  topics = StudyItem.find("done=", "1")
+  topics = StudyItem.find("done", "1")
   puts ""
   format_items(topics)
 end
@@ -184,9 +184,9 @@ def search
   puts ColorizedString["
       Resultado da busca:"].colorize(:yellow)
   puts ""
-
-  topics = StudyItem.find("title LIKE", search_for)
   
+  topics = StudyItem.find("title", search_for).empty? ? StudyItem.find("description", search_for) : StudyItem.find("title", search_for)
+
   if !topics.empty?
     format_items(topics)
   else

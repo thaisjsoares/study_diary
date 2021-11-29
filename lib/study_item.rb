@@ -77,7 +77,7 @@ class StudyItem
   def self.find(query, term)
     db = SQLite3::Database.open "db/database.db"
     db.results_as_hash = true
-    topics = db.execute "SELECT title, description, category, done FROM topics where #{query} '#{term}'"
+    topics = db.execute "SELECT title, description, category, done FROM topics where #{query} LIKE '%#{term}%'"
     db.close
     topics.map { |topic| new(title: topic["title"], description: topic["description"], category: topic["category"], done: topic["done"]) }
   end
